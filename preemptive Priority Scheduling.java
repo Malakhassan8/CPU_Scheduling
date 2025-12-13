@@ -116,13 +116,14 @@ public class Main {
         processes.add(new Process("P2", 2, 3, 1));
         processes.add(new Process("P3", 4, 4, 3));
         processes.add(new Process("P4", 5, 2, 2));
-        //processes.add(new Process("P5", 0, 2, 5));
+
 
         System.out.println("===== Preemptive Priority Scheduling Test =====\n");
 
         PreemptivePriorityScheduler.schedule(processes);
     }
 }
+
 
 
 
