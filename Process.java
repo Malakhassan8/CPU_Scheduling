@@ -1,3 +1,5 @@
+package os.schedulers;
+
 public class Process {
 
     private String name;
