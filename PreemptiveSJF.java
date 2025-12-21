@@ -1,101 +1,87 @@
-import java.util.ArrayList;
+        package os.schedulers;
 
-public class PreemptiveSJF {
+        import java.util.ArrayList;
+        import java.util.List;
 
-    private ArrayList<Process> processes;
-    private int contextSwitchTime;
+        public class PreemptiveSJF {
 
-    public PreemptiveSJF(int contextSwitchTime) {
-        this.processes = new ArrayList<>();
-        this.contextSwitchTime = contextSwitchTime;
-    }
+            private final ArrayList<Process> processes;
+            private final int contextSwitchTime;
+            private final List<String> executionOrder;
 
-    public void addProcess(Process p) {
-        processes.add(p);
-    }
+            public PreemptiveSJF(int contextSwitchTime) {
+                this.processes = new ArrayList<>();
+                this.contextSwitchTime = contextSwitchTime;
+                this.executionOrder = new ArrayList<>();
+            }
 
-    public void schedule() {
+            public void addProcess(Process p) {
+                processes.add(p);
+            }
 
-        int time = 0;
-        int completed = 0;
-        Process currentProcess = null;
-
-        System.out.println("Process execution order:");
-
-        while (completed < processes.size()) {
-
-            Process shortest = null;
-
-            for (Process p : processes) {
-                if (p.getArrivalTime() <= time && p.getRemainingTime() > 0) {
-                    if (shortest == null ||
-                            p.getRemainingTime() < shortest.getRemainingTime()) {
-                        shortest = p;
+            private Process findShortest(int time) {
+                Process shortest = null;
+                for (Process p : processes) {
+                    if (p.getArrivalTime() <= time && p.getRemainingTime() > 0) {
+                        if (shortest == null || p.getRemainingTime() < shortest.getRemainingTime())
+                            shortest = p;
+                        else if (p.getRemainingTime() == shortest.getRemainingTime()
+                                && p.getArrivalTime() < shortest.getArrivalTime())
+                            shortest = p;
                     }
                 }
+                return shortest;
             }
 
-            if (shortest == null) {
-                time++;
-                continue;
-            }
+            public void schedule() {
+                int time = 0;
+                int completedCount = 0;
+                int total = processes.size();
+                Process current = null;
+                boolean firstEver = true;
 
-            if (currentProcess != shortest) {
-                if (currentProcess != null) {
-                    time += contextSwitchTime;
+                while (completedCount < total) {
+                    Process shortest = findShortest(time);
+                    if (shortest == null) {
+                        time++;
+                        continue;
+                    }
+
+                    if (current != shortest) {
+                        if (!firstEver) {
+                            time += contextSwitchTime;
+                        }
+                        firstEver = false;
+                        current = shortest;
+                        if (executionOrder.isEmpty() || !executionOrder.get(executionOrder.size() - 1).equals(current.getName())) {
+                            executionOrder.add(current.getName());
+                        }
+                    }
+
+                    current.setRemainingTime(current.getRemainingTime() - 1);
+                    time++;
+
+                    if (current.getRemainingTime() == 0) {
+                        current.setCompletionTime(time);
+                        completedCount++;
+                    }
                 }
-                currentProcess = shortest;
-                System.out.print(currentProcess.getName() + " ");
+                calculateTimes();
             }
 
-            currentProcess.setRemainingTime(
-                    currentProcess.getRemainingTime() - 1);
-            time++;
+            private void calculateTimes() {
+                for (Process p : processes) {
+                    int tat = p.getCompletionTime() - p.getArrivalTime();
+                    p.setTurnaroundTime(tat);
+                    p.setWaitingTime(tat - p.getBurstTime());
+                }
+            }
 
-            if (currentProcess.getRemainingTime() == 0) {
-                currentProcess.setCompletionTime(time);
-                completed++;
-                currentProcess = null;
+            public List<Process> getProcesses() {
+                return processes;
+            }
+
+            public List<String> getExecutionOrder() {
+                return executionOrder;
             }
         }
-
-        System.out.println("\n");
-        calculateTimes();
-        printResults();
-    }
-
-    private void calculateTimes() {
-        for (Process p : processes) {
-            int turnaround = p.getCompletionTime() - p.getArrivalTime();
-            int waiting = turnaround - p.getBurstTime();
-            p.setTurnaroundTime(turnaround);
-            p.setWaitingTime(waiting);
-        }
-    }
-
-    private void printResults() {
-
-        double totalWT = 0;
-        double totalTAT = 0;
-
-        System.out.println();
-        System.out.printf("%-12s %-15s %-18s%n",
-                "Process", "Waiting Time", "Turnaround Time");
-
-        for (Process p : processes) {
-            totalWT += p.getWaitingTime();
-            totalTAT += p.getTurnaroundTime();
-
-            System.out.printf("%-12s %-15d %-18d%n",
-                    p.getName(),
-                    p.getWaitingTime(),
-                    p.getTurnaroundTime());
-        }
-
-        System.out.println();
-        System.out.printf("Average Waiting Time = %.2f%n",
-                totalWT / processes.size());
-        System.out.printf("Average Turnaround Time = %.2f%n",
-                totalTAT / processes.size());
-    }
-}
